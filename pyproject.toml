@@ -43,6 +43,9 @@ select = [
 ]
 ignore = ["E501"]  # длину строк контролирует line-length
 
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 
