@@ -34,6 +34,14 @@ jobs:
     name: Tests (pytest)
     runs-on: ubuntu-latest
     needs: [lint]
+    env:
+      APP_ENV: ci
+      LOG_LEVEL: INFO
+      PORT: "8000"
+      EVENTS_PROVIDER_BASE_URL: http://localhost:8000
+      EVENTS_PROVIDER_API_KEY: ${{ secrets.LMS_API_KEY }}
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/test
+      SYNC_INTERVAL_SECONDS: "86400"
     steps:
       - uses: actions/checkout@v4
 
@@ -50,3 +58,4 @@ jobs:
 
       - name: Run tests
         run: uv run pytest -v
+
