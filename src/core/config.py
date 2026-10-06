@@ -40,10 +40,7 @@ def _build_database_url() -> str:
     if all([username, password, host, database]):
         return f"postgresql+psycopg://{username}:{password}@{host}:{port}/{database}"
 
-    raise RuntimeError(
-        "Cannot determine database URL. "
-        "Set DATABASE_URL or POSTGRES_* variables."
-    )
+    raise RuntimeError("Cannot determine database URL. Set DATABASE_URL or POSTGRES_* variables.")
 
 
 class Settings(BaseSettings):
