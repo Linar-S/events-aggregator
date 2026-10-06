@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Виртуальные окружения
+.venv/
+venv/
+env/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+
+# Секреты (ВАЖНО!)
+.env
+.env.local
+.env.*.local
+
+# Документация и CI
+README.md
+NOTES.md
+.github/
+docs/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Прочее
+*.log
+*.tmp
+dist/
+build/

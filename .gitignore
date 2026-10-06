@@ -1,6 +1,7 @@
 # env
 .env
 .env.local
+.env.docker
 
 # Python
 __pycache__/
