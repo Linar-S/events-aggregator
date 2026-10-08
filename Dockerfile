@@ -2,15 +2,12 @@
 
 FROM python:3.14-slim AS builder
 
-# uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Копируем файлы зависимостей
 COPY pyproject.toml uv.lock ./
 
-# Устанавливаем зависимости
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
@@ -19,8 +16,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 COPY src ./src
+COPY alembic.ini ./
+COPY migrations ./migrations
 
-# Устанавливаем сам проект
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev || true
 
@@ -31,9 +29,10 @@ RUN groupadd --system --gid 1000 app && \
 
 WORKDIR /app
 
-# Копируем окружение и код
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --from=builder --chown=app:app /app/src /app/src
+COPY --from=builder --chown=app:app /app/alembic.ini /app/alembic.ini
+COPY --from=builder --chown=app:app /app/migrations /app/migrations
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
@@ -44,9 +43,7 @@ USER app
 
 EXPOSE 8000
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')" || exit 1
 
-# Запуск
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "alembic upgrade head && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000"]
