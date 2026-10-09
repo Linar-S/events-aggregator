@@ -14,6 +14,15 @@ logger = logging.getLogger(__name__)
 FIRST_SYNC_DATE = "2000-01-01"
 
 
+def _to_date(value: str) -> str:
+    """API принимает changed_at только как YYYY-MM-DD.
+
+    У нас в SyncMeta хранится полный ISO (2026-10-09T21:10:00+03:00),
+    поэтому отрезаем время.
+    """
+    return value[:10]
+
+
 class SyncEventsUsecase:
     """Синхронизация событий из Events Provider API в локальную БД.
 
@@ -41,7 +50,7 @@ class SyncEventsUsecase:
         if meta is None:
             meta = SyncMeta(last_changed_at=None, sync_status="idle")
 
-        changed_at = meta.last_changed_at or FIRST_SYNC_DATE
+        changed_at = _to_date(meta.last_changed_at) if meta.last_changed_at else FIRST_SYNC_DATE
         meta.sync_status = "running"
         meta.last_error = None
         await self._sync_meta.upsert(meta)
