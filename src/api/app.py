@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from src.api.routes import events, health, sync
+from src.api.routes import events, health, sync, tickets
 
 
 def create_app() -> FastAPI:
@@ -8,4 +8,5 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(sync.router)
     app.include_router(events.router)
+    app.include_router(tickets.router)
     return app

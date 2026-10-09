@@ -6,6 +6,11 @@ from src.api.schemas.event import (
     PlaceDetailResponse,
     PlaceResponse,
 )
+from src.api.schemas.ticket import (
+    TicketCancelResponse,
+    TicketCreateRequest,
+    TicketCreateResponse,
+)
 
 __all__ = [
     "EventDetailResponse",
@@ -14,4 +19,7 @@ __all__ = [
     "EventSeatsResponse",
     "PlaceDetailResponse",
     "PlaceResponse",
+    "TicketCancelResponse",
+    "TicketCreateRequest",
+    "TicketCreateResponse",
 ]

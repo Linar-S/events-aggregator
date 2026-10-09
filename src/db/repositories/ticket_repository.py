@@ -24,3 +24,6 @@ class SQLAlchemyTicketRepository:
             update(Ticket).where(Ticket.id == ticket_id).values(status=status)
         )
         await self._session.flush()
+
+    async def get_by_id(self, ticket_id: str) -> Ticket | None:
+        return await self._session.get(Ticket, ticket_id)
