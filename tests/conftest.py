@@ -5,9 +5,10 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.api.app import create_app
+from src.api.routes import health as health_module
 from src.db.models import Base
 
-# ---------- FastAPI-фикстуры (были) ----------
+# ---------- FastAPI-фикстуры ----------
 
 
 class FakeSession:
@@ -22,9 +23,6 @@ async def fake_get_session() -> AsyncIterator[FakeSession]:
 @pytest.fixture
 async def client() -> AsyncIterator[AsyncClient]:
     app = create_app()
-
-    from src.api.routes import health as health_module
-
     app.dependency_overrides[health_module.get_session] = fake_get_session
 
     transport = ASGITransport(app=app)
@@ -34,7 +32,7 @@ async def client() -> AsyncIterator[AsyncClient]:
     app.dependency_overrides.clear()
 
 
-# ---------- БД-фикстуры (новые) ----------
+# ---------- БД-фикстуры ----------
 
 
 @pytest.fixture

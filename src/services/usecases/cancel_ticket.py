@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from src.db.models import TicketStatus
 from src.db.repositories import (
     EventRepositoryProtocol,
     TicketRepositoryProtocol,
@@ -44,4 +45,4 @@ class CancelTicketUsecase:
         except EventsProviderError as exc:
             raise TicketNotFoundError(str(exc)) from exc
 
-        await self._tickets.update_status(ticket.id, "cancelled")
+        await self._tickets.update_status(ticket.id, TicketStatus.CANCELLED)

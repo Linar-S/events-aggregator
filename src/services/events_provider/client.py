@@ -1,5 +1,6 @@
 from types import TracebackType
 from typing import Any
+from urllib.parse import urljoin
 
 import aiohttp
 
@@ -21,7 +22,11 @@ DEFAULT_TIMEOUT = 10.0
 
 
 class EventsProviderClient:
-    """HTTP-клиент для Events Provider API (на aiohttp)."""
+    """HTTP-клиент для Events Provider API (на aiohttp).
+
+    Все запросы к внешнему сервису идут только через этот класс.
+    URL'ы всегда заканчиваются на trailing slash — иначе API отдаёт 301/308.
+    """
 
     def __init__(
         self,
@@ -60,6 +65,7 @@ class EventsProviderClient:
     # ---------- публичные методы ----------
 
     async def events(self, changed_at: str, cursor: str | None = None) -> EventsPage:
+        """Получить страницу событий, изменённых после `changed_at`."""
         params: dict[str, str] = {"changed_at": changed_at}
         if cursor:
             params["cursor"] = cursor
@@ -68,6 +74,7 @@ class EventsProviderClient:
         return EventsPage.model_validate(data)
 
     async def seats(self, event_id: str) -> list[str]:
+        """Список свободных мест для события."""
         data = await self._request("GET", f"/api/events/{event_id}/seats/")
         return SeatsResponse.model_validate(data).seats
 
@@ -79,6 +86,7 @@ class EventsProviderClient:
         seat: str,
         email: str,
     ) -> str:
+        """Зарегистрировать участника. Возвращает ticket_id."""
         payload = {
             "first_name": first_name,
             "last_name": last_name,
@@ -93,6 +101,7 @@ class EventsProviderClient:
         return RegisterResponse.model_validate(data).ticket_id
 
     async def unregister(self, event_id: str, ticket_id: str) -> bool:
+        """Отменить регистрацию. Возвращает True при успехе."""
         data = await self._request(
             "DELETE",
             f"/api/events/{event_id}/unregister/",
@@ -113,7 +122,8 @@ class EventsProviderClient:
         if self._session is None:
             raise EventsProviderError("ClientSession is not initialized. Use async with.")
 
-        url = f"{self._base_url}{path}"
+        url = urljoin(self._base_url + "/", path.lstrip("/"))
+
         try:
             async with self._session.request(
                 method=method,

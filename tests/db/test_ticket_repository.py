@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,8 +22,6 @@ def _place() -> Place:
 
 
 def _event() -> Event:
-    from datetime import UTC, datetime
-
     return Event(
         id="evt-1",
         name="Event 1",

@@ -4,6 +4,7 @@ from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.models.base import Base, TimestampMixin
+from src.db.models.enums import TicketStatus
 
 
 class Ticket(Base, TimestampMixin):
@@ -34,7 +35,11 @@ class Ticket(Base, TimestampMixin):
     seat: Mapped[str] = mapped_column(String(32), nullable=False)
 
     # Статус: active / cancelled
-    status: Mapped[str] = mapped_column(String(32), default="active", nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(32),
+        default=TicketStatus.ACTIVE,
+        nullable=False,
+    )
 
     def __repr__(self) -> str:
         return f"<Ticket id={self.id} event_id={self.event_id} seat={self.seat}>"

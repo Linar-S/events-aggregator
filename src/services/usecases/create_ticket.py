@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from src.db.models import Ticket
+from src.db.models import EventStatus, Ticket, TicketStatus
 from src.db.repositories import (
     EventRepositoryProtocol,
     TicketRepositoryProtocol,
@@ -50,7 +50,7 @@ class CreateTicketUsecase:
         if event is None:
             raise EventNotFoundError(event_id)
 
-        if event.status != "published":
+        if event.status != EventStatus.PUBLISHED:
             raise EventNotPublishedError(event.status)
 
         now = datetime.now(UTC)
@@ -74,8 +74,7 @@ class CreateTicketUsecase:
                 email=email,
             )
         except EventsProviderError as exc:
-            details = getattr(exc, "details", None)
-            raise SeatNotAvailableError(f"{exc} | details={details}") from exc
+            raise SeatNotAvailableError(str(exc)) from exc
 
         ticket = Ticket(
             id=str(uuid.uuid4()),
@@ -85,6 +84,6 @@ class CreateTicketUsecase:
             last_name=last_name,
             email=email,
             seat=seat,
-            status="active",
+            status=TicketStatus.ACTIVE,
         )
         return await self._tickets.create(ticket)

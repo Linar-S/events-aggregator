@@ -4,6 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.models.base import Base, TimestampMixin
+from src.db.models.enums import EventStatus
 from src.db.models.place import Place
 
 
@@ -47,4 +48,4 @@ class Event(Base, TimestampMixin):
 
     @property
     def is_published(self) -> bool:
-        return self.status == "published"
+        return self.status == EventStatus.PUBLISHED

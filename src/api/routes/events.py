@@ -1,12 +1,11 @@
 from datetime import date
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
 
 from src.api.dependencies import (
     EventRepositoryDep,
     EventsProviderClientDep,
-    PlaceRepositoryDep,
 )
 from src.api.schemas import (
     EventDetailResponse,
@@ -14,9 +13,27 @@ from src.api.schemas import (
     EventSeatsResponse,
     EventsPageResponse,
 )
-from src.services.events_provider import EventsProviderError
+from src.services.usecases import (
+    EventNotFoundError,
+    EventNotPublishedError,
+    EventsProviderUnavailableError,
+    GetEventSeatsUsecase,
+)
 
 router = APIRouter(prefix="/api/events", tags=["events"])
+
+
+def _build_page_url(
+    base_url: str,
+    *,
+    page: int,
+    page_size: int,
+    date_from: date | None,
+) -> str:
+    params: dict[str, str] = {"page": str(page), "page_size": str(page_size)}
+    if date_from is not None:
+        params["date_from"] = date_from.isoformat()
+    return f"{base_url}?{urlencode(params)}"
 
 
 @router.get("", response_model=EventsPageResponse)
@@ -31,12 +48,17 @@ async def list_events(
     rows, total = await events.list(date_from=date_from, offset=offset, limit=page_size)
 
     base_url = str(request.base_url).rstrip("/") + "/api/events/"
+
     next_url = None
     previous_url = None
     if offset + page_size < total:
-        next_url = f"{base_url}?page={page + 1}&page_size={page_size}"
+        next_url = _build_page_url(
+            base_url, page=page + 1, page_size=page_size, date_from=date_from
+        )
     if page > 1:
-        previous_url = f"{base_url}?page={page - 1}&page_size={page_size}"
+        previous_url = _build_page_url(
+            base_url, page=page - 1, page_size=page_size, date_from=date_from
+        )
 
     results = [EventResponse.model_validate(r) for r in rows]
     return EventsPageResponse(
@@ -58,56 +80,23 @@ async def get_event(
     return EventDetailResponse.model_validate(event)
 
 
-# Простой in-memory кэш на 30 секунд: {event_id: list[str]}
-_seats_cache: dict[str, tuple[float, list[str]]] = {}
-_SEATS_TTL = 30.0
-
-
-def _get_cached_seats(event_id: str) -> list[str] | None:
-    import time
-
-    entry = _seats_cache.get(event_id)
-    if entry is None:
-        return None
-    ts, seats = entry
-    if time.monotonic() - ts > _SEATS_TTL:
-        _seats_cache.pop(event_id, None)
-        return None
-    return seats
-
-
-def _set_cached_seats(event_id: str, seats: list[str]) -> None:
-    import time
-
-    _seats_cache[event_id] = (time.monotonic(), seats)
-
-
 @router.get("/{event_id}/seats", response_model=EventSeatsResponse)
 async def get_event_seats(
     event_id: str,
     events: EventRepositoryDep,
-    places: PlaceRepositoryDep,
     client: EventsProviderClientDep,
-) -> EventSeatsResponse | JSONResponse:
-    event = await events.get(event_id)
-    if event is None:
-        raise HTTPException(status_code=404, detail="Event not found")
-
-    # Не ходим во внешний API для неопубликованных — он вернёт 500 с HTML
-    if event.status != "published":
+) -> EventSeatsResponse:
+    usecase = GetEventSeatsUsecase(client=client, events=events)
+    try:
+        seats = await usecase.do(event_id)
+    except EventNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except EventNotPublishedError as exc:
         raise HTTPException(
             status_code=400,
-            detail=f"Event is not published (status={event.status})",
-        )
-
-    cached = _get_cached_seats(event_id)
-    if cached is not None:
-        return EventSeatsResponse(event_id=event_id, available_seats=cached)
-
-    try:
-        seats = await client.seats(event_id)
-    except EventsProviderError as exc:
+            detail=f"Event is not published: {exc}",
+        ) from exc
+    except EventsProviderUnavailableError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    _set_cached_seats(event_id, seats)
     return EventSeatsResponse(event_id=event_id, available_seats=seats)
