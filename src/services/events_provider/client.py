@@ -42,7 +42,7 @@ class EventsProviderClient:
         self._session = session
         self._own_session = session is None
 
-    async def __aenter__(self) -> EventsProviderClient:
+    async def __aenter__(self) -> "EventsProviderClient":
         if self._own_session:
             self._session = aiohttp.ClientSession(
                 timeout=self._timeout,

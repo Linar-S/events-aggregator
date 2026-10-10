@@ -26,7 +26,7 @@ class EventsPaginator:
         self._started = False
         self._done = False
 
-    def __aiter__(self) -> EventsPaginator:
+    def __aiter__(self) -> "EventsPaginator":
         return self
 
     async def __anext__(self) -> Event:
