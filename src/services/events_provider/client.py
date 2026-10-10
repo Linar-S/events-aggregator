@@ -155,5 +155,5 @@ class EventsProviderClient:
     async def _safe_body(self, response: aiohttp.ClientResponse) -> object:
         try:
             return await response.json()
-        except (aiohttp.ContentTypeError, ValueError):
+        except aiohttp.ContentTypeError, ValueError:
             return await response.text()
