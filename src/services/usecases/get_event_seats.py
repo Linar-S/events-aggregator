@@ -4,6 +4,11 @@ from src.db.models import EventStatus
 from src.db.repositories import EventRepositoryProtocol
 from src.services.events_provider import EventsProviderClient
 from src.services.events_provider.exceptions import EventsProviderError
+from src.services.usecases.exceptions import (
+    EventNotFoundError,
+    EventNotPublishedError,
+    EventsProviderUnavailableError,
+)
 
 _SEATS_TTL = 30.0
 _seats_cache: dict[str, tuple[float, list[str]]] = {}
@@ -22,18 +27,6 @@ def _get_cached(event_id: str) -> list[str] | None:
 
 def _set_cached(event_id: str, seats: list[str]) -> None:
     _seats_cache[event_id] = (time.monotonic(), seats)
-
-
-class EventNotFoundError(Exception):
-    """Событие не найдено в нашей БД."""
-
-
-class EventNotPublishedError(Exception):
-    """Событие не published — места недоступны."""
-
-
-class EventsProviderUnavailableError(Exception):
-    """Внешний API вернул ошибку."""
 
 
 class GetEventSeatsUsecase:

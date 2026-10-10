@@ -8,22 +8,12 @@ from src.db.repositories import (
 )
 from src.services.events_provider import EventsProviderClient
 from src.services.events_provider.exceptions import EventsProviderError
-
-
-class EventNotFoundError(Exception):
-    """Событие не найдено в нашей БД."""
-
-
-class EventNotPublishedError(Exception):
-    """Событие не published — регистрация невозможна."""
-
-
-class RegistrationClosedError(Exception):
-    """Дедлайн регистрации прошёл."""
-
-
-class SeatNotAvailableError(Exception):
-    """Выбранное место недоступно."""
+from src.services.usecases.exceptions import (
+    EventNotFoundError,
+    EventNotPublishedError,
+    RegistrationClosedError,
+    SeatNotAvailableError,
+)
 
 
 class CreateTicketUsecase:

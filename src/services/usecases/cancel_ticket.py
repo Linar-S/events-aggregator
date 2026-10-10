@@ -7,14 +7,10 @@ from src.db.repositories import (
 )
 from src.services.events_provider import EventsProviderClient
 from src.services.events_provider.exceptions import EventsProviderError
-
-
-class TicketNotFoundError(Exception):
-    """Тикет не найден в нашей БД."""
-
-
-class EventAlreadyPastError(Exception):
-    """Событие уже прошло — отмена невозможна."""
+from src.services.usecases.exceptions import (
+    EventAlreadyPastError,
+    TicketNotFoundError,
+)
 
 
 class CancelTicketUsecase:
