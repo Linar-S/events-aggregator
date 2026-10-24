@@ -1,3 +1,4 @@
+import json
 from types import TracebackType
 from typing import Any
 from urllib.parse import urljoin
@@ -72,11 +73,18 @@ class CapashinoClient:
             "idempotency_key": idempotency_key,
         }
 
+        # ФИКС: Явно кодируем в UTF-8 и передаем через data.
+        # Это заставляет aiohttp отправить Content-Length и
+        # правильный Content-Type с charset=utf-8, что предотвращает 500 от Capashino.
+        data = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+
         try:
             async with self._session.request(
                 method="POST",
                 url=url,
-                json=payload,
+                data=data,
+                headers=headers,
             ) as response:
                 return await self._handle_response(response)
         except aiohttp.ClientError as exc:
