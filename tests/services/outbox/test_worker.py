@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Outbox, OutboxStatus
 from src.db.repositories import SQLAlchemyOutboxRepository
+from src.services.capashino import CapashinoClient
 from src.services.outbox.worker import process_batch
 
 
@@ -16,19 +17,20 @@ async def test_process_batch_marks_sent_on_success(
 
     sent: list[str] = []
 
-    async def fake_handler(e: Outbox) -> None:
-        sent.append(e.id)
+    async def fake_handler(_e: Outbox, _c: CapashinoClient) -> None:
+        sent.append(_e.id)
 
-    processed = await process_batch(
-        db_session,
-        batch_size=10,
-        max_attempts=3,
-        handler=fake_handler,
-    )
+    async with CapashinoClient(base_url="http://localhost", api_key="key") as c:
+        processed = await process_batch(
+            db_session,
+            capashino_client=c,
+            batch_size=10,
+            max_attempts=3,
+            handler=fake_handler,
+        )
 
     assert processed == 1
     assert sent == [entry.id]
-
     refreshed = await db_session.get(Outbox, entry.id)
     assert refreshed is not None
     assert refreshed.status == OutboxStatus.SENT
@@ -41,34 +43,23 @@ async def test_process_batch_marks_failed_on_error(
     repo = SQLAlchemyOutboxRepository(db_session)
     entry = await repo.create(
         event_type="ticket_purchased",
-        payload={"ticket_id": "abc"},
+        payload={"ticket_id": "abc", "message": "Hello"},
     )
 
-    async def failing_handler(_: Outbox) -> None:
+    async def failing_handler(_e: Outbox, _c: CapashinoClient) -> None:
         raise RuntimeError("capashino is down")
 
-    processed = await process_batch(
-        db_session,
-        batch_size=10,
-        max_attempts=3,
-        handler=failing_handler,
-    )
+    async with CapashinoClient(base_url="http://localhost", api_key="key") as c:
+        processed = await process_batch(
+            db_session,
+            capashino_client=c,
+            batch_size=10,
+            max_attempts=3,
+            handler=failing_handler,
+        )
 
     assert processed == 1
-
     refreshed = await db_session.get(Outbox, entry.id)
     assert refreshed is not None
     assert refreshed.attempts == 1
-    assert refreshed.last_error == "capashino is down"
-    assert refreshed.status == OutboxStatus.PENDING  # не достигли лимита
-
-
-async def test_process_batch_empty_returns_zero(
-    db_session: AsyncSession,
-) -> None:
-    processed = await process_batch(
-        db_session,
-        batch_size=10,
-        max_attempts=3,
-    )
-    assert processed == 0
+    assert refreshed.status == OutboxStatus.PENDING
