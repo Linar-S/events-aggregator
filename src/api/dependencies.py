@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.config import get_settings
 from src.db.repositories import (
     SQLAlchemyEventRepository,
+    SQLAlchemyOutboxRepository,
     SQLAlchemyPlaceRepository,
     SQLAlchemyTicketRepository,
 )
@@ -41,7 +42,14 @@ async def get_events_provider_client() -> AsyncIterator[EventsProviderClient]:
         yield client
 
 
+async def get_outbox_repository(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> SQLAlchemyOutboxRepository:
+    return SQLAlchemyOutboxRepository(session)
+
+
 EventRepositoryDep = Annotated[SQLAlchemyEventRepository, Depends(get_event_repository)]
 PlaceRepositoryDep = Annotated[SQLAlchemyPlaceRepository, Depends(get_place_repository)]
 TicketRepositoryDep = Annotated[SQLAlchemyTicketRepository, Depends(get_ticket_repository)]
 EventsProviderClientDep = Annotated[EventsProviderClient, Depends(get_events_provider_client)]
+OutboxRepositoryDep = Annotated[SQLAlchemyOutboxRepository, Depends(get_outbox_repository)]

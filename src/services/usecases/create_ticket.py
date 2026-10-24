@@ -1,9 +1,11 @@
 import uuid
 from datetime import UTC, datetime
 
+from src.core.datetime_utils import ensure_aware_utc
 from src.db.models import EventStatus, Ticket, TicketStatus
 from src.db.repositories import (
     EventRepositoryProtocol,
+    OutboxRepositoryProtocol,
     TicketRepositoryProtocol,
 )
 from src.services.events_provider import EventsProviderClient
@@ -22,10 +24,12 @@ class CreateTicketUsecase:
         client: EventsProviderClient,
         events: EventRepositoryProtocol,
         tickets: TicketRepositoryProtocol,
+        outbox: OutboxRepositoryProtocol,
     ) -> None:
         self._client = client
         self._events = events
         self._tickets = tickets
+        self._outbox = outbox
 
     async def do(
         self,
@@ -44,8 +48,9 @@ class CreateTicketUsecase:
             raise EventNotPublishedError(event.status)
 
         now = datetime.now(UTC)
-        if event.registration_deadline <= now:
-            raise RegistrationClosedError(event.registration_deadline.isoformat())
+        deadline = ensure_aware_utc(event.registration_deadline)
+        if deadline <= now:
+            raise RegistrationClosedError(deadline.isoformat())
 
         try:
             available = await self._client.seats(event_id)
@@ -76,4 +81,21 @@ class CreateTicketUsecase:
             seat=seat,
             status=TicketStatus.ACTIVE,
         )
-        return await self._tickets.create(ticket)
+        saved = await self._tickets.create(ticket)
+
+        # Создаём запись в outbox в той же транзакции.
+        # Payload содержит всё необходимое для отправки уведомления.
+        message = f"Вы успешно зарегистрированы на мероприятие - {event.name}, место {seat}"
+        await self._outbox.create(
+            event_type="ticket_purchased",
+            payload={
+                "ticket_id": saved.id,
+                "event_id": event_id,
+                "event_name": event.name,
+                "seat": seat,
+                "email": email,
+                "message": message,
+            },
+        )
+
+        return saved

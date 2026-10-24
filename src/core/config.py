@@ -59,6 +59,18 @@ class Settings(BaseSettings):
 
     sync_interval_seconds: int = Field(default=86400, alias="SYNC_INTERVAL_SECONDS")
 
+    outbox_poll_interval_seconds: int = Field(default=5, alias="OUTBOX_POLL_INTERVAL_SECONDS")
+    outbox_max_attempts: int = Field(default=10, alias="OUTBOX_MAX_ATTEMPTS")
+    outbox_batch_size: int = Field(default=50, alias="OUTBOX_BATCH_SIZE")
+
+    capashino_base_url: str = Field(default="", alias="CAPASHINO_BASE_URL")
+    capashino_api_key: str = Field(default="", alias="CAPASHINO_API_KEY")
+    capashino_timeout_seconds: float = Field(default=10.0, alias="CAPASHINO_TIMEOUT_SECONDS")
+
+    idempotency_key_ttl_seconds: int = Field(default=86400, alias="IDEMPOTENCY_KEY_TTL_SECONDS")
+
+    sentry_dsn: str = Field(default="", alias="SENTRY_DSN")
+
 
 @lru_cache
 def get_settings() -> Settings:
