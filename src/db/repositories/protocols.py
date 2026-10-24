@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import date
 from typing import Protocol
 
-from src.db.models import Event, Place, SyncMeta, Ticket
+from src.db.models import Event, Outbox, Place, SyncMeta, Ticket
 
 
 class PlaceRepositoryProtocol(Protocol):
@@ -34,3 +34,15 @@ class TicketRepositoryProtocol(Protocol):
 class SyncMetaRepositoryProtocol(Protocol):
     async def get(self) -> SyncMeta | None: ...
     async def upsert(self, meta: SyncMeta) -> SyncMeta: ...
+
+
+class OutboxRepositoryProtocol(Protocol):
+    async def create(self, *, event_type: str, payload: dict) -> Outbox: ...
+    async def fetch_pending(self, limit: int = 50) -> Sequence[Outbox]: ...
+    async def mark_sent(self, outbox_id: str) -> None: ...
+    async def mark_failed(
+        self,
+        outbox_id: str,
+        error: str,
+        max_attempts: int,
+    ) -> None: ...

@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from src.api.dependencies import (
     EventRepositoryDep,
     EventsProviderClientDep,
+    OutboxRepositoryDep,
     TicketRepositoryDep,
 )
 from src.api.schemas import (
@@ -30,8 +31,14 @@ async def create_ticket(
     events: EventRepositoryDep,
     tickets: TicketRepositoryDep,
     client: EventsProviderClientDep,
+    outbox: OutboxRepositoryDep,
 ) -> TicketCreateResponse:
-    usecase = CreateTicketUsecase(client=client, events=events, tickets=tickets)
+    usecase = CreateTicketUsecase(
+        client=client,
+        events=events,
+        tickets=tickets,
+        outbox=outbox,
+    )
     try:
         ticket = await usecase.do(
             event_id=payload.event_id,

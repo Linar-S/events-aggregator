@@ -8,6 +8,7 @@ from fastapi import FastAPI
 
 from src.api.app import create_app
 from src.services.background.sync_worker import sync_worker
+from src.services.outbox import outbox_worker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,16 +17,19 @@ logger = logging.getLogger(__name__)
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     stop_event = asyncio.Event()
-    worker_task = asyncio.create_task(sync_worker(stop_event))
-    logger.info("Background sync worker scheduled")
+
+    sync_task = asyncio.create_task(sync_worker(stop_event))
+    outbox_task = asyncio.create_task(outbox_worker(stop_event))
+    logger.info("Background workers scheduled: sync, outbox")
 
     try:
         yield
     finally:
         stop_event.set()
-        with contextlib.suppress(asyncio.CancelledError):
-            await worker_task
-        logger.info("Background sync worker stopped")
+        for task in (sync_task, outbox_task):
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        logger.info("Background workers stopped")
 
 
 def create_lifespan_app() -> FastAPI:

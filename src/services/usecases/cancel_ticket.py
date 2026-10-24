@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from src.core.datetime_utils import ensure_aware_utc
 from src.db.models import TicketStatus
 from src.db.repositories import (
     EventRepositoryProtocol,
@@ -33,8 +34,9 @@ class CancelTicketUsecase:
         if event is None:
             raise TicketNotFoundError(ticket_id)
 
-        if event.event_time <= datetime.now(UTC):
-            raise EventAlreadyPastError(event.event_time.isoformat())
+        event_time = ensure_aware_utc(event.event_time)
+        if event_time <= datetime.now(UTC):
+            raise EventAlreadyPastError(event_time.isoformat())
 
         try:
             await self._client.unregister(event.id, ticket.external_ticket_id)
