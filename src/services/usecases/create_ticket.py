@@ -97,17 +97,31 @@ class CreateTicketUsecase:
         except EventsProviderError as exc:
             raise SeatNotAvailableError(str(exc)) from exc
 
-        ticket = Ticket(
-            id=str(uuid.uuid4()),
-            event_id=event_id,
-            external_ticket_id=external_ticket_id,
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            seat=seat,
-            status=TicketStatus.ACTIVE,
+        # Проверяем, не возвращает ли внешний API старый ticket_id для этого места
+        existing_ticket = await self._tickets.get_by_event_and_external_id(
+            event_id, external_ticket_id
         )
-        saved = await self._tickets.create(ticket)
+
+        if existing_ticket:
+            # Обновляем данные существующего тикета и возвращаем его
+            existing_ticket.first_name = first_name
+            existing_ticket.last_name = last_name
+            existing_ticket.email = email
+            existing_ticket.status = TicketStatus.ACTIVE
+            saved = existing_ticket
+            # flush сделает репозиторий или commit в get_session
+        else:
+            ticket = Ticket(
+                id=str(uuid.uuid4()),
+                event_id=event_id,
+                external_ticket_id=external_ticket_id,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                seat=seat,
+                status=TicketStatus.ACTIVE,
+            )
+            saved = await self._tickets.create(ticket)
 
         # 3. Сохраняем ключ идемпотентности ТОЛЬКО после успешной регистрации
         if idempotency_key:

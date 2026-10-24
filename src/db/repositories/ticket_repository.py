@@ -27,3 +27,11 @@ class SQLAlchemyTicketRepository:
 
     async def get_by_id(self, ticket_id: str) -> Ticket | None:
         return await self._session.get(Ticket, ticket_id)
+
+    async def get_by_event_and_external_id(self, event_id: str, external_id: str) -> Ticket | None:
+        result = await self._session.execute(
+            select(Ticket).where(
+                Ticket.event_id == event_id, Ticket.external_ticket_id == external_id
+            )
+        )
+        return result.scalar_one_or_none()
