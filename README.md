@@ -1,49 +1,40 @@
 # Events Aggregator
 
 Backend-сервис агрегатор событий из Events Provider API.
-Периодически синхронизирует события в локальную PostgreSQL, 
-предоставляет REST API для работы с событиями и регистрациями.
+Периодически синхронизирует события в локальную PostgreSQL, предоставляет REST API для работы с событиями и регистрациями.
+
+**Часть 2 (Доработка):** реализован паттерн **Transactional Outbox** для гарантированной доставки уведомлений, интеграция с Notification-сервисом **Capashino**, поддержка **идемпотентности** при регистрации на мероприятие и мониторинг ошибок через **GlitchTip**.
 
 ## Стек
 - Python 3.14, FastAPI, aiohttp
 - PostgreSQL, SQLAlchemy 2.0 (async), Alembic
+- sentry-sdk (интеграция с GlitchTip)
 - uv, Ruff, pytest
 - Docker, Kubernetes, GitHub Actions
 
 ## Запуск локально
 
 1. Установить зависимости: `uv sync`
-2. Скопировать `.env.example` → `.env`, заполнить:
-   - `EVENTS_PROVIDER_BASE_URL` — URL Events Provider API
-   - `EVENTS_PROVIDER_API_KEY` — API-ключ
-   - `DATABASE_URL` — PostgreSQL URL
-3. Применить миграции: `uv run alembic upgrade head`
-4. Запустить: `uv run python -m src.main`
+2. Скопировать `.env.example` → `.env` и заполнить переменные:
+   ```env
+   # Events Provider
+   EVENTS_PROVIDER_BASE_URL=http://...
+   EVENTS_PROVIDER_API_KEY=your_api_key
 
-Приложение доступно на `http://localhost:8000`.
+   # База данных
+   DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/events_aggregator
 
-## API
+   # Capashino (уведомления)
+   CAPASHINO_BASE_URL=http://student-system-capashino-web.student-system-capashino.svc:8000
+   CAPASHINO_API_KEY=your_capashino_key
 
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/health` | Health check |
-| POST | `/api/sync/trigger` | Ручной запуск синхронизации |
-| GET | `/api/events` | Список событий (page, page_size, date_from) |
-| GET | `/api/events/{event_id}` | Детали события |
-| GET | `/api/events/{event_id}/seats` | Свободные места (кэш 30 сек) |
-| POST | `/api/tickets` | Регистрация на событие (201) |
-| DELETE | `/api/tickets/{ticket_id}` | Отмена регистрации (200) |
+   # Настройки Outbox-воркера
+   OUTBOX_POLL_INTERVAL_SECONDS=5
+   OUTBOX_MAX_ATTEMPTS=10
+   OUTBOX_BATCH_SIZE=50
 
-## Разработка
+   # Идемпотентность
+   IDEMPOTENCY_KEY_TTL_SECONDS=86400
 
-```bash
-# Тесты
-uv run pytest -v
-
-# Линтер
-uv run ruff check . --fix
-uv run ruff format .
-
-# Миграции
-uv run alembic revision --autogenerate -m "описание"
-uv run alembic upgrade head
+   # GlitchTip (Sentry)
+   SENTRY_DSN=http://...
