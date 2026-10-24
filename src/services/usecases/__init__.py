@@ -5,6 +5,7 @@ from src.services.usecases.exceptions import (
     EventNotFoundError,
     EventNotPublishedError,
     EventsProviderUnavailableError,
+    IdempotencyConflictError,  # <-- добавь
     RegistrationClosedError,
     SeatNotAvailableError,
     TicketNotFoundError,
@@ -20,6 +21,7 @@ __all__ = [
     "EventNotPublishedError",
     "EventsProviderUnavailableError",
     "GetEventSeatsUsecase",
+    "IdempotencyConflictError",
     "RegistrationClosedError",
     "SeatNotAvailableError",
     "SyncEventsUsecase",

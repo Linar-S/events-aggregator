@@ -1,6 +1,7 @@
 from src.db.models.base import Base, TimestampMixin
 from src.db.models.enums import EventStatus, TicketStatus
 from src.db.models.event import Event
+from src.db.models.idempotency_key import IdempotencyKey
 from src.db.models.outbox import Outbox, OutboxStatus
 from src.db.models.place import Place
 from src.db.models.sync_meta import SyncMeta
@@ -17,4 +18,5 @@ __all__ = [
     "Ticket",
     "TicketStatus",
     "TimestampMixin",
+    "IdempotencyKey",
 ]

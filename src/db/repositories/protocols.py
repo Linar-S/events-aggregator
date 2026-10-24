@@ -1,8 +1,8 @@
 from collections.abc import Sequence
-from datetime import date
+from datetime import date, datetime
 from typing import Protocol
 
-from src.db.models import Event, Outbox, Place, SyncMeta, Ticket
+from src.db.models import Event, IdempotencyKey, Outbox, Place, SyncMeta, Ticket
 
 
 class PlaceRepositoryProtocol(Protocol):
@@ -46,3 +46,11 @@ class OutboxRepositoryProtocol(Protocol):
         error: str,
         max_attempts: int,
     ) -> None: ...
+
+
+class IdempotencyRepositoryProtocol(Protocol):
+    async def get(self, key: str) -> IdempotencyKey | None: ...
+    async def create(
+        self, key: str, ticket_id: str, request_hash: str, expires_at: datetime
+    ) -> IdempotencyKey: ...
+    async def delete(self, key: str) -> None: ...
