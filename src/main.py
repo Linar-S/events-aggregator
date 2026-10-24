@@ -3,15 +3,32 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 
+import sentry_sdk
 import uvicorn
 from fastapi import FastAPI
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from src.api.app import create_app
+from src.core.config import get_settings
 from src.services.background.sync_worker import sync_worker
 from src.services.outbox import outbox_worker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# 1. Инициализация GlitchTip (Sentry SDK)
+settings = get_settings()
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+        traces_sample_rate=0.0,
+        environment=settings.app_env,
+    )
+    logger.info("GlitchTip initialized")
+else:
+    logger.warning("SENTRY_DSN is not set. GlitchTip is disabled.")
 
 
 @contextlib.asynccontextmanager
