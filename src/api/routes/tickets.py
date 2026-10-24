@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from src.api.dependencies import (
     EventRepositoryDep,
     EventsProviderClientDep,
+    IdempotencyRepositoryDep,
     OutboxRepositoryDep,
     TicketRepositoryDep,
 )
@@ -21,6 +22,7 @@ from src.services.usecases import (
     SeatNotAvailableError,
     TicketNotFoundError,
 )
+from src.services.usecases.exceptions import IdempotencyConflictError
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
@@ -30,14 +32,16 @@ async def create_ticket(
     payload: TicketCreateRequest,
     events: EventRepositoryDep,
     tickets: TicketRepositoryDep,
-    client: EventsProviderClientDep,
     outbox: OutboxRepositoryDep,
+    idempotency: IdempotencyRepositoryDep,
+    client: EventsProviderClientDep,
 ) -> TicketCreateResponse:
     usecase = CreateTicketUsecase(
         client=client,
         events=events,
         tickets=tickets,
         outbox=outbox,
+        idempotency=idempotency,
     )
     try:
         ticket = await usecase.do(
@@ -46,21 +50,18 @@ async def create_ticket(
             last_name=payload.last_name,
             email=str(payload.email),
             seat=payload.seat,
+            idempotency_key=payload.idempotency_key,
         )
     except EventNotFoundError as exc:
         raise HTTPException(status_code=404, detail=f"Event not found: {exc}") from exc
     except EventNotPublishedError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Event is not published: {exc}",
-        ) from exc
+        raise HTTPException(status_code=400, detail=f"Event is not published: {exc}") from exc
     except RegistrationClosedError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Registration deadline passed: {exc}",
-        ) from exc
+        raise HTTPException(status_code=400, detail=f"Registration deadline passed: {exc}") from exc
     except SeatNotAvailableError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except IdempotencyConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     return TicketCreateResponse(ticket_id=ticket.id)
 

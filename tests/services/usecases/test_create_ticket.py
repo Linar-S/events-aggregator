@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.models import Event, OutboxStatus, Place
 from src.db.repositories import (
     SQLAlchemyEventRepository,
+    SQLAlchemyIdempotencyRepository,
     SQLAlchemyOutboxRepository,
     SQLAlchemyPlaceRepository,
     SQLAlchemyTicketRepository,
@@ -58,6 +59,7 @@ async def test_create_ticket_creates_outbox_entry(db_session: AsyncSession) -> N
         events=SQLAlchemyEventRepository(db_session),
         tickets=SQLAlchemyTicketRepository(db_session),
         outbox=SQLAlchemyOutboxRepository(db_session),
+        idempotency=SQLAlchemyIdempotencyRepository(db_session),
     )
 
     ticket = await usecase.do(

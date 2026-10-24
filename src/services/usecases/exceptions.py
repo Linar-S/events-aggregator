@@ -24,3 +24,7 @@ class TicketNotFoundError(Exception):
 
 class EventsProviderUnavailableError(Exception):
     """Внешний API Events Provider вернул ошибку."""
+
+
+class IdempotencyConflictError(Exception):
+    """Ключ идемпотентности уже использован с другими данными."""
