@@ -109,7 +109,6 @@ class CreateTicketUsecase:
             existing_ticket.email = email
             existing_ticket.status = TicketStatus.ACTIVE
             saved = existing_ticket
-            # flush сделает репозиторий или commit в get_session
         else:
             ticket = Ticket(
                 id=str(uuid.uuid4()),

@@ -5,7 +5,7 @@ from src.services.usecases.exceptions import (
     EventNotFoundError,
     EventNotPublishedError,
     EventsProviderUnavailableError,
-    IdempotencyConflictError,  # <-- добавь
+    IdempotencyConflictError,
     RegistrationClosedError,
     SeatNotAvailableError,
     TicketNotFoundError,
